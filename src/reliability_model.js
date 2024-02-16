@@ -46,9 +46,48 @@ const getProgram = () => {
   }) 
 }
 
+const getBeamDest = () => {
+  return new Promise(function(resolve, reject) {
+    pg_pool.pool.query('SELECT beam_dest_id,beam_destination FROM reliability_new.accel_beam_destination ORDER BY beam_destination ASC', (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(results.rows);
+    })
+  }) 
+}
+
+const createBeamDest = (body) => {
+  return new Promise(function(resolve, reject) {
+    const { beam_destination } = body
+    pg_pool.pool.query('INSERT INTO reliability_new.accel_beam_destination (beam_destination) VALUES ($1) RETURNING *', [beam_destination], (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(`A new beam destination has been added added: ${results.rows[0]}`)
+    })
+  })
+}
+const deleteBeamDest = (id_string) => {
+  return new Promise(function(resolve, reject) {
+    const id = parseInt(id_string);
+    pg_pool.pool.query('DELETE FROM reliability_new.accel_beam_destination WHERE beam_dest_id = $1', [id], (error, results) => {
+      if (error) {
+        console.log("Got an error while deleting:");
+        console.log(error);
+        reject(error)
+      }
+      resolve(`beam destination deleted with beam_dest_id: ${id}`)
+    })
+  })
+}
+
 module.exports = {
   getShiftCal,
   createShiftCal,
   deleteShiftCal,
-  getProgram
+  getProgram,
+  getBeamDest,
+  createBeamDest,
+  deleteBeamDest
 }

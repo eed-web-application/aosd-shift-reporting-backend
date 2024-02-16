@@ -1,7 +1,9 @@
-const express = require("express");
+const express = require('express')
 const bodyParser = require('body-parser');
-const app = express();
+const app = express()
 const port = 3001
+
+const reliability_model = require('./reliability_model.js')
 
 app.use(bodyParser.json());
 app.use(
@@ -20,9 +22,8 @@ app.use(function (req, res, next) {
  
   next();
 });
-
-app.get("/", (req, res) => {
-  //res.send("Hello World!");
+app.get('/', (req, res) => {
+  //res.status(200).send('Hello World!');
   reliability_model
   .getShiftCal()
   .then(response => {
@@ -67,14 +68,42 @@ app.get('/programdata', (req, res) => {
     res.status(500).send(error);
   })
 })
-/*
+
+app.get('/beamdest', (req, res) => {
+  reliability_model
+  .getBeamDest()
+  .then(response => {
+    res.status(200).send(response);
+  })
+  .catch(error => {
+    res.status(500).send(error);
+  })
+})
+
+app.post('/beamdest', (req,res) => {
+  console.log("ADDing new beam destination.");
+  reliability_model
+  .createBeamDest(req.body)
+  .then(response => {
+    res.status(200).send(response);
+  })
+  .catch(error => {
+    res.status(500).send(error);
+  })
+})
+
+app.delete('/beamdest/:id', (req,res) => {
+  console.log("DELETEing beam destination.");
+  reliability_model
+  .deleteBeamDest(req.params.id)
+  .then(response => {
+    res.status(200).send(response);
+  })
+  .catch(error => {
+    res.status(500).send(error);
+  })
+})
+
 app.listen(port, () => {
   console.log(`App running on port ${port}.`)
 })
-*/
-
-const server = app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
-
-module.exports = { app, server }; // Export both app and server
