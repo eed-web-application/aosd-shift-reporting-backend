@@ -22,7 +22,7 @@ app.use(function (req, res, next) {
  
   next();
 });
-app.get('/', (req, res) => {
+app.get('/shiftdata', (req, res) => {
   //res.status(200).send('Hello World!');
   reliability_model
   .getShiftCal()
