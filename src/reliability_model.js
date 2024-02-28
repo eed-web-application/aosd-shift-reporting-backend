@@ -82,6 +82,42 @@ const deleteBeamDest = (id_string) => {
   })
 }
 
+const getAccelSystem = () => {
+  return new Promise(function(resolve, reject) {
+    pg_pool.pool.query('SELECT system_id, system_name, active_flag FROM reliability_new.accel_systems ORDER BY system_name ASC', (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(results.rows);
+    })
+  }) 
+}
+
+const createAccelSystem = (body) => {
+  return new Promise(function(resolve, reject) {
+    const { system_name } = body
+    pg_pool.pool.query('INSERT INTO reliability_new.accel_systems (system_name) VALUES ($1) RETURNING *', [system_name], (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(`A new system name has been added added: ${results.rows[0]}`)
+    })
+  })
+}
+const deleteAccelSystem = (id_string) => {
+  return new Promise(function(resolve, reject) {
+    const id = parseInt(id_string);
+    pg_pool.pool.query('DELETE FROM reliability_new.accel_systems WHERE system_id = $1', [id], (error, results) => {
+      if (error) {
+        console.log("Got an error while deleting:");
+        console.log(error);
+        reject(error)
+      }
+      resolve(`Accel Systems deleted for system_id: ${id}`)
+    })
+  })
+}
+
 module.exports = {
   getShiftCal,
   createShiftCal,
@@ -89,5 +125,8 @@ module.exports = {
   getProgram,
   getBeamDest,
   createBeamDest,
-  deleteBeamDest
+  deleteBeamDest,
+  getAccelSystem,
+  createAccelSystem,
+  deleteAccelSystem
 }

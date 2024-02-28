@@ -104,6 +104,41 @@ app.delete('/beamdest/:id', (req,res) => {
   })
 })
 
+app.get('/accelsystem', (req, res) => {
+  reliability_model
+  .getAccelSystem()
+  .then(response => {
+    res.status(200).send(response);
+  })
+  .catch(error => {
+    res.status(500).send(error);
+  })
+})
+
+app.post('/accelsystem', (req,res) => {
+  console.log("ADDing new Accel System.");
+  reliability_model
+  .createAccelSystem(req.body)
+  .then(response => {
+    res.status(200).send(response);
+  })
+  .catch(error => {
+    res.status(500).send(error);
+  })
+})
+
+app.delete('/accelsystem/:id', (req,res) => {
+  console.log("DELETEing Accel System.");
+  reliability_model
+  .deleteAccelSystem(req.params.id)
+  .then(response => {
+    res.status(200).send(response);
+  })
+  .catch(error => {
+    res.status(500).send(error);
+  })
+})
+
 app.listen(port, () => {
   console.log(`App running on port ${port}.`)
 })
