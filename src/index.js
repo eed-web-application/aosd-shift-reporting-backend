@@ -1,7 +1,9 @@
-const express = require('express')
+// Backend index.js
+const express = require('express');
 const bodyParser = require('body-parser');
-const app = express()
-const port = 3001
+const moment = require('moment-timezone');
+const app = express();
+const port = 3001;
 
 const reliability_model = require('./reliability_model.js')
 
@@ -23,7 +25,6 @@ app.use(function (req, res, next) {
   next();
 });
 app.get('/shiftdata', (req, res) => {
-  //res.status(200).send('Hello World!');
   reliability_model
   .getShiftCal()
   .then(response => {
@@ -34,17 +35,32 @@ app.get('/shiftdata', (req, res) => {
   })
 })
 
-app.post('/shiftdata', (req,res) => {
+app.post('/shiftdata', (req, res) => {
   console.log("POSTing new Shift Calendar.");
+
+  // Assuming req.body.start_time and req.body.end_time are in the format you expect
+  const startDateTime = moment(req.body.start_time);
+  const endDateTime = moment(req.body.end_time);
+
+  // Subtract 8 hours from the start_time and end_time
+  const adjustedStartDateTime = moment(startDateTime).subtract(7, 'hours');
+  const adjustedEndDateTime = moment(endDateTime).subtract(7, 'hours');
+
+  // Create the shiftData object with adjusted times
+  const shiftData = {
+    start_time: adjustedStartDateTime.toISOString(), 
+    end_time: adjustedEndDateTime.toISOString(), 
+  };
+
   reliability_model
-  .createShiftCal(req.body)
-  .then(response => {
-    res.status(200).send(response);
-  })
-  .catch(error => {
-    res.status(500).send(error);
-  })
-})
+    .createShiftCal(shiftData)
+    .then(response => {
+      res.status(200).send(response);
+    })
+    .catch(error => {
+      res.status(500).send(error);
+    });
+});
 
 app.delete('/shiftdata/:id', (req,res) => {
   console.log("DELETEing Shift Calendar.");
@@ -138,6 +154,19 @@ app.delete('/accelsystem/:id', (req,res) => {
     res.status(500).send(error);
   })
 })
+
+app.post('/shiftDates', (req,res) => {
+  console.log("Request received at /shiftDates");
+  reliability_model
+  .createShiftInfo(req.body)
+  .then(response => {
+    res.status(200).send(response);
+  })
+  .catch(error => {
+    console.error("Error in createShiftInfo:", error);
+    res.status(500).send(error);
+  })
+});
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`)
