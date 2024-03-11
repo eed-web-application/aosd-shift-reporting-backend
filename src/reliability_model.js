@@ -1,3 +1,5 @@
+const moment = require('moment');
+
 const pg_pool = require('./pg_connection.js')
 
 const getShiftCal = () => {
@@ -120,37 +122,65 @@ const deleteAccelSystem = (id_string) => {
 const createShiftInfo = async (body) => {
   console.log("In reliability_model createShiftInfo new Shift Info.");
 // Poonam - put this inside or outside try ??
-    const { shiftDates, commentsData } = body;
+    const { shiftDates, commentsData, downtimeData } = body;
     let client; // Declare client variable outside the try-catch block
-    try {
+//    try {
       // Start a transaction to ensure atomicity (all or nothing)
       client = await pg_pool.pool.connect();
       await client.query('BEGIN');
-      const shiftDatesQuery = `INSERT INTO reliability.accel_shift_dates (start_time, end_time) VALUES ($1, $2) RETURNING shift_id;`;
+      const shiftDatesQuery = `
+        INSERT INTO reliability.accel_shift_dates (start_time, end_time) 
+        VALUES ($1, $2) 
+        RETURNING shift_id;
+        `;      
       const shiftDatesValues = [shiftDates.startTime, shiftDates.endTime];
       const shiftDatesResult = await client.query(shiftDatesQuery, shiftDatesValues);
       const shiftId = shiftDatesResult.rows[0].shift_id;
-      const commentsQuery = `INSERT INTO reliability.accel_comments (comments, parent_id, parent_table) VALUES ($1, $2, $3);`;
+      
+      const commentsQuery = `
+        INSERT INTO reliability.accel_comments (comments, parent_id, parent_table) 
+        VALUES ($1, $2, $3);
+        `;
       for (const comments of commentsData) {
         const commentsValues = [comments.comments, shiftId, 'ACCEL_SHIFT_DATES'];
         await client.query(commentsQuery, commentsValues);
       }
+
+      const downtimeQuery = `
+        INSERT INTO reliability.accel_downtime_entry (downtime_description, downtime_category, system_id, 
+                                                   downtime_start, downtime_end, cater_id, elog_url, shift_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+      `;
+    for (const downtime of downtimeData) {
+      const downtimeValues = [
+        downtime.description,
+        downtime.category,
+        downtime.system || null,
+        moment(downtime.start).format('YYYY-MM-DDTHH:mm:ss'),
+        moment(downtime.end).format('YYYY-MM-DDTHH:mm:ss'),
+        downtime.caterId || null, // Use null if caterId is not provided
+        downtime.elogUrl || null, // Use null if elogUrl is not provided
+        shiftId,
+      ];
+      await client.query(downtimeQuery, downtimeValues);
+    }
+     
       // Commit the transaction
       await client.query('COMMIT');
 //      res.json({ success: true });
-    } catch (error) {
+//    } catch (error) {
       // Rollback the transaction in case of an error
-      if (client) {
-        await client.query('ROLLBACK');
-      }
-      console.error('Error creating Shift data and comments:', error.message);
+//      if (client) {
+//        await client.query('ROLLBACK');
+//      }
+//      console.error('Error creating Shift data and comments:', error.message);
 //      res.status(500).json({ error: 'Internal Server Error' });
-    } finally {
+//    } finally {
       // Release the client back to the pool in the finally block
-      if (client) {
-        client.release();
-      }
-    }
+//      if (client) {
+//        client.release();
+//      }
+//    }
 }
 
 module.exports = {
