@@ -1,40 +1,18 @@
+// reliability_model.js - Setup the Postgres database connection for extracting data
 const moment = require('moment');
 
 const pg_pool = require('./pg_connection.js')
 
+// Shift Calendar
 const getShiftCal = () => {
   return new Promise(function(resolve, reject) {
-    pg_pool.pool.query('SELECT shift_id, start_time, end_time FROM reliability.accel_shift_dates ORDER BY start_time ASC', (error, results) => {
+    pg_pool.pool.query("select b.shift_id,b.start_time,b.end_time,STRING_AGG (a.comments,',' ORDER BY a.comment_id) comments from reliability.accel_comments a, reliability.accel_shift_dates b where a.parent_id = b.shift_id and a.parent_table = 'ACCEL_SHIFT_DATES' group by b.shift_id order by b.start_time ASC", (error, results) => {
       if (error) {
         reject(error)
       }
       resolve(results.rows);
     })
   }) 
-}
-const createShiftCal = (body) => {
-  return new Promise(function(resolve, reject) {
-    const { start_time, end_time } = body
-    pg_pool.pool.query('INSERT INTO reliability.accel_shift_dates (start_time, end_time) VALUES ($1, $2) RETURNING *', [start_time, end_time], (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(`A new Shift Calendar has been added added: ${results.rows[0]}`)
-    })
-  })
-}
-const deleteShiftCal = (id_string) => {
-  return new Promise(function(resolve, reject) {
-    const id = parseInt(id_string);
-    pg_pool.pool.query('DELETE FROM reliability.accel_shift_dates WHERE shift_id = $1', [id], (error, results) => {
-      if (error) {
-        console.log("Got an error while deleting:");
-        console.log(error);
-        reject(error)
-      }
-      resolve(`Shift calendar deleted with SHIFT_ID: ${id}`)
-    })
-  })
 }
 
 const getProgram = () => {
@@ -119,9 +97,8 @@ const deleteAccelSystem = (id_string) => {
     })
   })
 }
+// Shift Reporting module
 const createShiftInfo = async (body) => {
-  console.log("In reliability_model createShiftInfo new Shift Info.");
-// Poonam - put this inside or outside try ??
     const { shiftDates, commentsData, downtimeData } = body;
     let client; // Declare client variable outside the try-catch block
 //    try {
@@ -145,6 +122,7 @@ const createShiftInfo = async (body) => {
         const commentsValues = [comments.comments, shiftId, 'ACCEL_SHIFT_DATES'];
         await client.query(commentsQuery, commentsValues);
       }
+      console.log('Downtime Data:', body.downtimeData);
 
       const downtimeQuery = `
         INSERT INTO reliability.accel_downtime_entry (downtime_description, downtime_category, system_id, 
@@ -152,10 +130,13 @@ const createShiftInfo = async (body) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
       `;
     for (const downtime of downtimeData) {
+            console.log("Downtime Data:", downtime); // Add this line for debugging
+
       const downtimeValues = [
         downtime.description,
         downtime.category,
-        downtime.system || null,
+        downtime.system_id || null,
+        // downtime.selectedSystemId || null,
         moment(downtime.start).format('YYYY-MM-DDTHH:mm:ss'),
         moment(downtime.end).format('YYYY-MM-DDTHH:mm:ss'),
         downtime.caterId || null, // Use null if caterId is not provided
@@ -185,8 +166,6 @@ const createShiftInfo = async (body) => {
 
 module.exports = {
   getShiftCal,
-  createShiftCal,
-  deleteShiftCal,
   getProgram,
   getBeamDest,
   createBeamDest,

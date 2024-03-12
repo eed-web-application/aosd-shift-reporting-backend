@@ -35,45 +35,6 @@ app.get('/shiftdata', (req, res) => {
   })
 })
 
-app.post('/shiftdata', (req, res) => {
-  console.log("POSTing new Shift Calendar.");
-
-  // Assuming req.body.start_time and req.body.end_time are in the format you expect
-  const startDateTime = moment(req.body.start_time);
-  const endDateTime = moment(req.body.end_time);
-
-  // Subtract 8 hours from the start_time and end_time
-  const adjustedStartDateTime = moment(startDateTime).subtract(7, 'hours');
-  const adjustedEndDateTime = moment(endDateTime).subtract(7, 'hours');
-
-  // Create the shiftData object with adjusted times
-  const shiftData = {
-    start_time: adjustedStartDateTime.toISOString(), 
-    end_time: adjustedEndDateTime.toISOString(), 
-  };
-
-  reliability_model
-    .createShiftCal(shiftData)
-    .then(response => {
-      res.status(200).send(response);
-    })
-    .catch(error => {
-      res.status(500).send(error);
-    });
-});
-
-app.delete('/shiftdata/:id', (req,res) => {
-  console.log("DELETEing Shift Calendar.");
-  reliability_model
-  .deleteShiftCal(req.params.id)
-  .then(response => {
-    res.status(200).send(response);
-  })
-  .catch(error => {
-    res.status(500).send(error);
-  })
-})
-
 app.get('/programdata', (req, res) => {
   reliability_model
   .getProgram()
